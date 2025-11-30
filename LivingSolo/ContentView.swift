@@ -1,88 +1,58 @@
-//
-//  ContentView.swift
-//  LivingSolo
-//
-//  Created by Pushkar K U on 30/10/25.
-//
-
 import SwiftUI
-import CoreData
+import SwiftData
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
+    @State private var selectedTab = 0
 
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+        TabView(selection: $selectedTab) {
+            NavigationStack {
+                Text("Coming soon...")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            NavigationLink(destination: AboutView()) {
+                                Image(systemName: "setting.fill")
+                                    .font(.title2)
+                            }
+                        }
                     }
-                }
-                .onDelete(perform: deleteItems)
+                    .navigationTitle("Dashboard")
             }
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            .tabItem { Label("Dashboard", systemImage: "house.fill") }
+            .tag(0)
+
+            NavigationStack {
+                KitchenView()
+                    .navigationTitle("Kitchen")
             }
-            Text("Select an item")
-        }
-    }
+            .tabItem { Label("Kitchen", systemImage: "refrigerator.fill") }
+            .tag(1)
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            NavigationStack {
+                BudgetView()
+                    .navigationTitle("Budget")
             }
-        }
-    }
+            .tabItem { Label("Budget", systemImage: "sterlingsign.gauge.chart.leftthird.topthird.rightthird") }
+            .tag(2)
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            NavigationStack {
+                ToDoView()
+                    .navigationTitle("To Do")
             }
+            .tabItem { Label("To Do", systemImage: "checklist") }
+            .tag(3)
         }
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
-
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    do {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Expense.self, configurations: config)
+        
+        return ContentView()
+                    .modelContainer(container)
+        
+    }catch {fatalError("Failed to create SwiftData container: \(error)")
+    }
 }

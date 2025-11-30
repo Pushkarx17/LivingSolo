@@ -1,20 +1,12 @@
-//
-//  LivingSoloApp.swift
-//  LivingSolo
-//
-//  Created by Pushkar K U on 30/10/25.
-//
-
 import SwiftUI
+import SwiftData
 
 @main
 struct LivingSoloApp: App {
-    let persistenceController = PersistenceController.shared
-
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
+        .modelContainer(for: [Expense.self, KitchenItem.self, ToDoItem.self])
     }
 }
