@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>LivingSolo — minimalist app</title>
+<meta name="description" content="LivingSolo — minimalist app to visualise expenses, habits and time. Clean design, private-by-default." />
+
+<style>
+  :root{
+    --bg:#ffffff; --fg:#0b0b0b; --muted:#666;
+    --accent:#000; font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--fg); background:var(--bg); -webkit-font-smoothing:antialiased;
+    line-height:1.45; padding:48px;
+    display:flex; align-items:flex-start; justify-content:center;
+  }
+  .wrap{max-width:880px; width:100%}
+  header{display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:48px}
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit}
+  .logo {
+    width:40px; height:40px; border-radius:10px; display:inline-grid; place-items:center;
+    border:1px solid var(--fg); font-weight:700;
+  }
+  h1{font-size:36px; margin:0}
+  p.lead{color:var(--muted); margin:8px 0 0}
+  .cta{display:inline-flex; gap:10px; align-items:center}
+  .button{
+    padding:10px 14px; border-radius:10px; text-decoration:none; border:1px solid var(--fg);
+    display:inline-block; font-weight:600;
+  }
+  main{background:transparent}
+  .grid{display:grid; grid-template-columns:1fr 340px; gap:40px; align-items:start}
+  .card{padding:18px;border-radius:12px}
+  .features{display:grid; gap:12px; margin-top:24px}
+  .feature{display:flex; gap:12px; align-items:flex-start}
+  .feature .dot{width:36px;height:36px;border-radius:8px;border:1px solid var(--fg);
+    display:grid;place-items:center;font-weight:600}
+  .screens{border:1px solid #eee;padding:14px;border-radius:12px}
+  .screens img{width:100%; display:block; border-radius:8px}
+  footer{margin-top:48px;color:var(--muted); font-size:13px; display:flex; justify-content:space-between; gap:12px}
+  nav a{color:var(--muted); text-decoration:none; margin-left:14px}
+  @media (max-width:880px){
+    body{padding:24px}
+    .grid{grid-template-columns:1fr; gap:18px}
+    header{flex-direction:column; align-items:flex-start; gap:12px}
+    .button{padding:8px 12px}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="#">
+        <span class="logo">LS</span>
+        <div>
+          <div style="font-weight:700">LivingSolo</div>
+          <div style="font-size:12px;color:var(--muted)">Minimal budgeting & habit tracker</div>
+        </div>
+      </a>
+
+      <div class="cta" aria-hidden="false">
+        <a class="button" href="#download">Download</a>
+        <a class="button" href="#contact" style="background:transparent">Contact</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="grid" aria-labelledby="intro">
+        <div>
+          <h1 id="intro">Simple finances. Clear days.</h1>
+          <p class="lead">LivingSolo helps you track expenses, visualise time left in the month, and keep daily habits — without clutter or trackers.</p>
+
+          <div class="features" role="list">
+            <div class="feature" role="listitem">
+              <div class="dot">1</div>
+              <div>
+                <strong>Minimal budgeting</strong>
+                <div style="color:var(--muted);font-size:14px">Add expenses in seconds. See weekly and monthly totals at a glance.</div>
+              </div>
+            </div>
+
+            <div class="feature">
+              <div class="dot">2</div>
+              <div>
+                <strong>Habit & widget support</strong>
+                <div style="color:var(--muted);font-size:14px">Daily habits with reminders and a clean widget to keep you focused.</div>
+              </div>
+            </div>
+
+            <div class="feature">
+              <div class="dot">3</div>
+              <div>
+                <strong>Privacy-first</strong>
+                <div style="color:var(--muted);font-size:14px">Everything stored locally unless you opt-in for backup.</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:26px">
+            <a class="button" id="download" href="#" title="Download app">Download (iOS / Android)</a>
+            <a class="button" href="#screens" style="margin-left:12px">Preview</a>
+          </div>
+
+          <section id="how" style="margin-top:32px">
+            <h3 style="margin:0 0 10px">How it works</h3>
+            <ol style="color:var(--muted); padding-left:18px">
+              <li>Install the app</li>
+              <li>Set daily budget or goals</li>
+              <li>Track, review, improve</li>
+            </ol>
+          </section>
+
+          <p style="margin-top:20px;color:var(--muted);font-size:14px"><strong>Privacy:</strong> no analytics by default. Local storage only. If you add backups, you’ll be asked explicitly.</p>
+        </div>
+
+        <aside class="card">
+          <div class="screens" id="screens">
+            <!-- replace src with your screenshot files -->
+            <img src="screenshot-1.png" alt="LivingSolo app screenshot (main screen)" />
+            <p style="margin:8px 0 0;font-size:13px;color:var(--muted)">Tap images to replace with your own screenshots.</p>
+          </div>
+
+          <div style="margin-top:14px; display:flex; gap:8px; justify-content:space-between; align-items:center">
+            <div style="font-size:13px;color:var(--muted)">Version 1.0 • Updated recently</div>
+            <div style="font-size:13px">
+              <a href="#contact" style="color:var(--muted);text-decoration:none">Help</a>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <footer>
+      <div>© <span id="year"></span> Pushkar K U — LivingSolo</div>
+      <div>
+        <a href="#how">How it works</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </footer>
+  </div>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  // small behaviour: click screenshot to change placeholder (developer can remove)
+  const img = document.querySelector('.screens img');
+  img.addEventListener('click', ()=> {
+    const url = prompt('Enter public image URL for screenshot (or leave blank):');
+    if(url) img.src = url;
+  });
+</script>
+</body>
+</html>
