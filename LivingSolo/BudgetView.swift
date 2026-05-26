@@ -6,10 +6,16 @@ class Expense: Identifiable {
     var id: UUID = UUID()
     var name: String
     var amount: Double
+    var date: Date = Date()
+    var expenseCategory: String = "Other"
+    var isRecurring: Bool = true
 
-    init(name: String, amount: Double) {
+    init(name: String, amount: Double, expenseCategory: String = "Other", isRecurring: Bool = true) {
         self.name = name
         self.amount = amount
+        self.date = Date()
+        self.expenseCategory = expenseCategory
+        self.isRecurring = isRecurring
     }
 }
 
@@ -17,108 +23,197 @@ struct BudgetView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Expense.name) private var expenses: [Expense]
 
+    @AppStorage("budgetLimit") private var budgetLimit: Double = 0
+    @AppStorage("currencySymbol") private var currencySymbol: String = "£"
+
     @State private var name = ""
     @State private var amount = ""
+    @State private var selectedCategory = "Other"
+    @State private var isRecurring = true
+    @State private var showingLimitSheet = false
+    @State private var limitInput = ""
 
-    var monthlyTotal: Double {
-        expenses.reduce(0) { $0 + $1.amount }
-    }
+    private let expenseCategories = ["Food", "Transport", "Subscriptions", "Housing", "Other"]
+
+    var monthlyTotal: Double { expenses.reduce(0) { $0 + $1.amount } }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
+                if budgetLimit > 0 { progressCard }
+                inputCard
 
-                // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Add the expenses you expect every month — subscriptions, groceries, transport, essentials.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.horizontal)
-                .padding(.top, 8)
-
-                // Input card
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        TextField("Expense name (e.g. Spotify)", text: $name)
-                            .padding(12)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
-
-                        TextField("£0.00", text: $amount)
-                            .keyboardType(.decimalPad)
-                            .padding(12)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
-                            .frame(width: 120)
-                    }
-
-                    Button(action: addExpense) {
-                        Label("Add Item", systemImage: "plus")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(LinearGradient(colors: [Color.blue.opacity(0.85), Color.blue], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || amount.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .opacity((name.trimmingCharacters(in: .whitespaces).isEmpty || amount.trimmingCharacters(in: .whitespaces).isEmpty) ? 0.6 : 1)
-                }
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color(.systemBackground)).shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4))
-                .padding(.horizontal)
-
-                // Expense list
                 List {
                     ForEach(expenses) { expense in
                         HStack {
-                            Text(expense.name)
-                                .font(.headline)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(expense.name).font(.headline)
+                                HStack(spacing: 6) {
+                                    Text(expense.expenseCategory)
+                                        .font(.caption2).fontWeight(.semibold)
+                                        .padding(.horizontal, 6).padding(.vertical, 2)
+                                        .background(Color.blue.opacity(0.1))
+                                        .foregroundStyle(.blue)
+                                        .cornerRadius(4)
+                                    if !expense.isRecurring {
+                                        Text("One-off")
+                                            .font(.caption2).fontWeight(.semibold)
+                                            .padding(.horizontal, 6).padding(.vertical, 2)
+                                            .background(Color.purple.opacity(0.1))
+                                            .foregroundStyle(.purple)
+                                            .cornerRadius(4)
+                                    }
+                                }
+                            }
                             Spacer()
-                            Text("£\(expense.amount, specifier: "%.2f")")
+                            Text("\(currencySymbol)\(expense.amount, specifier: "%.2f")")
                                 .font(.headline)
                         }
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 4)
                     }
                     .onDelete(perform: deleteExpense)
                 }
                 .listStyle(.plain)
-                .padding(.horizontal)
 
-                // Monthly total
-                VStack(spacing: 6) {
-                    HStack {
-                        Text("Estimated monthly total")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("£\(monthlyTotal, specifier: "%.2f")")
-                            .font(.title3)
-                            .bold()
+                totalCard
+            }
+            .navigationTitle("Budget")
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        limitInput = budgetLimit > 0 ? String(format: "%.0f", budgetLimit) : ""
+                        showingLimitSheet = true
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
                     }
                 }
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemBackground)).shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 3))
-                .padding(.horizontal)
-                .padding(.bottom, 8)
             }
-            .navigationTitle("Monthly Expenses")
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .sheet(isPresented: $showingLimitSheet) { limitSheet }
+        }
+    }
+
+    private var progressCard: some View {
+        let fraction = min(monthlyTotal / budgetLimit, 1.0)
+        let tint: Color = fraction >= 0.9 ? .red : fraction >= 0.7 ? .orange : .green
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Budget limit").font(.caption).fontWeight(.semibold).foregroundStyle(.secondary).textCase(.uppercase)
+                Spacer()
+                Text("\(currencySymbol)\(monthlyTotal, specifier: "%.2f") / \(currencySymbol)\(budgetLimit, specifier: "%.0f")")
+                    .font(.caption).bold()
+            }
+            ProgressView(value: fraction).tint(tint)
+                .scaleEffect(x: 1, y: 2, anchor: .center)
+            Text(fraction >= 1 ? "Over budget!" : "\(Int((1 - fraction) * 100))% remaining")
+                .font(.caption2).foregroundStyle(fraction >= 1 ? .red : .secondary)
+        }
+        .padding()
+        .background(.regularMaterial)
+        .cornerRadius(14)
+        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+        .padding(.horizontal)
+    }
+
+    private var inputCard: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                TextField("Expense name", text: $name)
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
+
+                TextField("\(currencySymbol)0.00", text: $amount)
+                    .keyboardType(.decimalPad)
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
+                    .frame(width: 110)
+            }
+
+            HStack(spacing: 10) {
+                Picker("Category", selection: $selectedCategory) {
+                    ForEach(expenseCategories, id: \.self) { Text($0) }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Toggle("Recurring", isOn: $isRecurring)
+                    .font(.caption)
+            }
+
+            Button(action: addExpense) {
+                Label("Add Expense", systemImage: "plus")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(LinearGradient(colors: [.blue.opacity(0.85), .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || Double(amount) == nil)
+            .opacity((name.trimmingCharacters(in: .whitespaces).isEmpty || Double(amount) == nil) ? 0.6 : 1)
+        }
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color(.systemBackground)).shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4))
+        .padding(.horizontal)
+    }
+
+    private var totalCard: some View {
+        HStack {
+            Text("Estimated monthly total")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Spacer()
+            Text("\(currencySymbol)\(monthlyTotal, specifier: "%.2f")")
+                .font(.title3).bold()
+        }
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemBackground)).shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 3))
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
+    @ViewBuilder
+    private var limitSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Monthly Budget Limit") {
+                    TextField("e.g. 1200", text: $limitInput)
+                        .keyboardType(.decimalPad)
+                }
+                if budgetLimit > 0 {
+                    Section {
+                        Button("Remove limit", role: .destructive) {
+                            budgetLimit = 0
+                            showingLimitSheet = false
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Budget Limit")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        if let v = Double(limitInput) { budgetLimit = v }
+                        showingLimitSheet = false
+                    }
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showingLimitSheet = false }
+                }
+            }
         }
     }
 
     private func addExpense() {
-        guard let amountValue = Double(amount) else { return }
-        let newExpense = Expense(name: name.trimmingCharacters(in: .whitespaces), amount: amountValue)
-        context.insert(newExpense)
+        guard let value = Double(amount) else { return }
+        let e = Expense(name: name.trimmingCharacters(in: .whitespaces), amount: value,
+                        expenseCategory: selectedCategory, isRecurring: isRecurring)
+        context.insert(e)
         try? context.save()
-        name = ""
-        amount = ""
+        name = ""; amount = ""; selectedCategory = "Other"; isRecurring = true
     }
 
     private func deleteExpense(at offsets: IndexSet) {
-        for index in offsets {
-            context.delete(expenses[index])
-        }
+        offsets.forEach { context.delete(expenses[$0]) }
         try? context.save()
     }
 }

@@ -7,6 +7,6 @@ struct LivingSoloApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [Expense.self, KitchenItem.self, ToDoItem.self])
+        .modelContainer(for: [Expense.self, KitchenItem.self, Category.self, ToDoItem.self])
     }
 }
